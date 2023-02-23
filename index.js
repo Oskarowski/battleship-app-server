@@ -41,10 +41,10 @@ io.on("connection", (socket) => {
    */
 
   socket.on("fieldClicked", function (fieldElement) {
-    console.log(fieldElement);
+    // console.log(fieldElement);
   });
 
-  socket.on("shipsPickedData", function (shipsPickedData) {
+  socket.on("allShipsPicked", function (shipsPickedData) {
     console.log(
       "Player " + socket.id + " ready",
       JSON.stringify(shipsPickedData)
@@ -71,7 +71,7 @@ io.on("connection", (socket) => {
     ) {
       io.to("game").emit("theGameIsOn", true);
 
-      var playerId = Object.keys(players[Math.round(Math.random())]);
+      var playerId = Object.keys(players)[Math.round(Math.random())];
       players[playerId].socket.emit("yourTurn", true);
     }
   });
