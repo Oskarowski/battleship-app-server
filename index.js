@@ -45,10 +45,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("allShipsPicked", function (shipsPickedData) {
-    console.log(
-      "Player " + socket.id + " ready",
-      JSON.stringify(shipsPickedData)
-    );
+    // console.log(
+    //   "Player " + socket.id + " ready",
+    //   JSON.stringify(shipsPickedData)
+    // );
     socket.emit("blockClickingOnBoard", true);
 
     var playerIndex = getPlayerIndex(socket);
@@ -76,6 +76,21 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("shotFired", (data) => {
+    // console.log("fieldElement: ", fieldElement);
+    var fieldElement = data.fieldElement;
+
+    var playerIndex = getPlayerIndex(socket);
+    var opponentIndex = getOpponentIndex(playerIndex);
+
+    if (checkIfPlayerHitShip(opponentIndex, fieldElement)) {
+      io.to("game").emit("shotHit", {
+        shotHitBy: playerIndex,
+        fieldElement: fieldElement,
+      });
+    }
+  });
+
   socket.on("disconnect", function (reason) {
     delete players[socket.id];
     console.log("Player ❌ disconnected", socket.id);
@@ -95,4 +110,24 @@ function getOpponentIndex(playerIndex) {
   if (!opponentIndex) throw "Trouble getting opponent index";
 
   return opponentIndex;
+}
+
+function checkIfPlayerHitShip(justPlayerIndex, fieldElement) {
+  var allPlayerShips = players[justPlayerIndex].ships;
+  var isFieldHit = false;
+
+  allPlayerShips.forEach((individualShip, whichShip) => {
+    individualShip.pickedNodes.forEach((individualShipNode, whichNode) => {
+      if (
+        fieldElement.fieldRow == individualShipNode.fieldRow &&
+        fieldElement.fieldColumn == individualShipNode.fieldColumn
+      ) {
+        players[justPlayerIndex].ships[whichShip].pickedNodes[
+          whichNode
+        ].isFieldHit = true;
+        isFieldHit = true;
+      }
+    });
+  });
+  return isFieldHit;
 }
