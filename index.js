@@ -88,6 +88,31 @@ io.on("connection", (socket) => {
         shotHitBy: playerIndex,
         fieldElement: fieldElement,
       });
+
+      var shipCheckedForHit = checkAndGetSunkShip(opponentIndex, fieldElement);
+
+      if (shipCheckedForHit) {
+        io.to("game").emit("hitAndSunk", {
+          hitBy: playerIndex,
+          ship: shipCheckedForHit,
+        });
+        players[opponentIndex].ships.find(
+          (ship) => ship.id == shipCheckedForHit.id
+        ).isSunk = true;
+
+        if (getShipsLeftOnBoard(opponentIndex) === 0) {
+          io.to("game").emit("theGameIsOver", {});
+          players[playerIndex].socket.emit("youWin");
+          players[opponentIndex].socket.emit("youLoose");
+        }
+      } else {
+        io.to("game").emit("shotMissed", {
+          missedBy: playerIndex,
+          fieldElement: fieldElement,
+        });
+        socket.emit("blockClickingOnBoard", true);
+        players[opponentIndex].socket.emit("yourTurn", true);
+      }
     }
   });
 
@@ -131,3 +156,44 @@ function checkIfPlayerHitShip(justPlayerIndex, fieldElement) {
   });
   return isFieldHit;
 }
+
+function checkAndGetSunkShip(justPlayerIndex, fieldElement) {
+  var allPlayerShips = players[justPlayerIndex].ships;
+  var eHitShip = null;
+
+  allPlayerShips.forEach((individualShip) => {
+    individualShip.pickedNodes.forEach((shipNode) => {
+      if (
+        shipNode.fieldColumn == fieldElement.fieldColumn &&
+        shipNode.fieldRow == fieldElement.fieldRow
+      ) {
+        eHitShip = individualShip;
+      }
+    });
+  });
+
+  var alreadyHitShipNodes = 0;
+
+  if (eHitShip) {
+    eHitShip.pickedNodes.forEach((shipNode) => {
+      if (shipNode.isFieldHit) ++alreadyHitShipNodes;
+    });
+
+    if (eHitShip.pickedNodes.length == alreadyHitShipNodes) {
+      return eHitShip;
+    }
+  }
+
+  return false;
+}
+
+function getShipsLeftOnBoard(justPlayerIndex) {
+  var amountOfShipsLeft = 0;
+
+  players[justPlayerIndex].ships.forEach((individualShip) => {
+    if (!individualShip.isSunk) ++amountOfShipsLeft;
+    return amountOfShipsLeft;
+  });
+}
+
+// TO DO server => hitAndSunk , theGameIsOver , youWin , youLoose , shotMissed
