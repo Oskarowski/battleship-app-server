@@ -77,7 +77,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("shotFired", (data) => {
-    // console.log("fieldElement: ", fieldElement);
     var fieldElement = data.fieldElement;
 
     var playerIndex = getPlayerIndex(socket);
@@ -101,18 +100,18 @@ io.on("connection", (socket) => {
         ).isSunk = true;
 
         if (getShipsLeftOnBoard(opponentIndex) === 0) {
-          io.to("game").emit("theGameIsOver", {});
+          io.to("game").emit("theGameIsOver", true);
           players[playerIndex].socket.emit("youWin");
           players[opponentIndex].socket.emit("youLoose");
         }
-      } else {
-        io.to("game").emit("shotMissed", {
-          missedBy: playerIndex,
-          fieldElement: fieldElement,
-        });
-        socket.emit("blockClickingOnBoard", true);
-        players[opponentIndex].socket.emit("yourTurn", true);
       }
+    } else {
+      io.to("game").emit("shotMissed", {
+        missedBy: playerIndex,
+        fieldElement: fieldElement,
+      });
+      socket.emit("blockClickingOnBoard", true);
+      players[opponentIndex].socket.emit("yourTurn", true);
     }
   });
 
@@ -192,8 +191,6 @@ function getShipsLeftOnBoard(justPlayerIndex) {
 
   players[justPlayerIndex].ships.forEach((individualShip) => {
     if (!individualShip.isSunk) ++amountOfShipsLeft;
-    return amountOfShipsLeft;
   });
+  return amountOfShipsLeft;
 }
-
-// TO DO server => hitAndSunk , theGameIsOver , youWin , youLoose , shotMissed
