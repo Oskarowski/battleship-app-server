@@ -36,6 +36,25 @@ io.on("connection", (socket) => {
     console.log("Hello from " + data.playerName);
   });
 
+  socket.on("setPlayerName", function (recivedName) {
+    var playerIndex = getPlayerIndex(socket);
+    var opponentIndex = getOpponentIndex(playerIndex);
+
+    if (socket.id == playerIndex) {
+      players[playerIndex].name = recivedName;
+      players[opponentIndex].socket.emit(
+        "setOpponentName",
+        players[playerIndex].name
+      );
+    } else {
+      players[opponentIndex].name = recivedName;
+      players[playerIndex].socket.emit(
+        "setOpponentName",
+        players[opponentIndex].name
+      );
+    }
+  });
+
   /**
    *
    */
