@@ -15,7 +15,7 @@ var httpServer = http.createServer(app).listen(8082);
 
 var io = new Server(httpServer, { cors: { origin: "*" } });
 
-const players = [];
+const players = []; // table which stores players obj
 
 io.on("connection", (socket) => {
   if (Object.keys(players).length == 2) return socket.disconnect(true);
@@ -54,10 +54,6 @@ io.on("connection", (socket) => {
       );
     }
   });
-
-  /**
-   *
-   */
 
   socket.on("fieldClicked", function (fieldElement) {
     // console.log(fieldElement);
@@ -134,11 +130,18 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("theGameIsOver", (data) => {
+    const playerIndex = getPlayerIndex(socket);
+    players[playerIndex].ships = [];
+  });
+
   socket.on("disconnect", function (reason) {
     delete players[socket.id];
     console.log("Player ❌ disconnected", socket.id);
   });
 });
+
+// No connection needed functions:
 
 function getPlayerIndex(socket) {
   return socket.id;
