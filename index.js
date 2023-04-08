@@ -11,7 +11,9 @@ app.get("/folder", function (req, res) {
   res.send("Folder!");
 });
 
-var httpServer = http.createServer(app).listen(8082);
+const PORT = process.env.PORT || 8082;
+
+var httpServer = http.createServer(app).listen(PORT);
 
 var io = new Server(httpServer, { cors: { origin: "*" } });
 
