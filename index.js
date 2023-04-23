@@ -17,21 +17,40 @@ var httpServer = http.createServer(app).listen(PORT);
 
 var io = new Server(httpServer, { cors: { origin: "*" } });
 
+const allRooms = [
+  { id: 0, playersIn: 0 },
+  { id: 1, playersIn: 0 },
+];
+const primeroRoom = "primeroRoom";
 const players = []; // table which stores players obj
 
 io.on("connection", (socket) => {
-  if (Object.keys(players).length == 2) return socket.disconnect(true);
+  // if (Object.keys(players).length == 2) return socket.disconnect(true);
+  // TODO check if there is room for player to play in
   console.log("Player ✅ connection", socket.id);
 
   players[socket.id] = {
     socket: socket,
     name: null,
     ships: [],
+    roomID: null,
   };
+
+  for (var room in allRooms) {
+    var currentRoomID = room.id;
+    if (room.playersIn < 2) {
+      if (players[socket.id].roomID == null) {
+        room.playersIn++;
+        players[socket.id].roomID = String(currentRoomID);
+        break;
+      }
+    }
+  }
+  // TODO decrese the amount of players in the room after disconnect
 
   socket.emit("yourID", socket.id);
 
-  socket.join("game");
+  socket.join(players[socket.id].roomID);
 
   socket.on("greeting", function (data) {
     players[socket.id].name = data.playerName;
@@ -86,7 +105,7 @@ io.on("connection", (socket) => {
       players[playerIndex].ships.length > 0 &&
       players[opponentIndex].ships.length > 0
     ) {
-      io.to("game").emit("theGameIsOn", true);
+      io.to(players[socket.id].roomID).emit("theGameIsOn", true);
 
       var playerId = Object.keys(players)[Math.round(Math.random())];
       players[playerId].socket.emit("yourTurn", true);
@@ -100,7 +119,7 @@ io.on("connection", (socket) => {
     var opponentIndex = getOpponentIndex(playerIndex);
 
     if (checkIfPlayerHitShip(opponentIndex, fieldElement)) {
-      io.to("game").emit("shotHit", {
+      io.to(players[socket.id].roomID).emit("shotHit", {
         shotHitBy: playerIndex,
         fieldElement: fieldElement,
       });
@@ -108,7 +127,7 @@ io.on("connection", (socket) => {
       var shipCheckedForHit = checkAndGetSunkShip(opponentIndex, fieldElement);
 
       if (shipCheckedForHit) {
-        io.to("game").emit("hitAndSunk", {
+        io.to(players[socket.id].roomID).emit("hitAndSunk", {
           hitBy: playerIndex,
           ship: shipCheckedForHit,
         });
@@ -117,13 +136,13 @@ io.on("connection", (socket) => {
         ).isSunk = true;
 
         if (getShipsLeftOnBoard(opponentIndex) === 0) {
-          io.to("game").emit("theGameIsOver", true);
+          io.to(players[socket.id].roomID).emit("theGameIsOver", true);
           players[playerIndex].socket.emit("youWin");
           players[opponentIndex].socket.emit("youLoose");
         }
       }
     } else {
-      io.to("game").emit("shotMissed", {
+      io.to(players[socket.id].roomID).emit("shotMissed", {
         missedBy: playerIndex,
         fieldElement: fieldElement,
       });
