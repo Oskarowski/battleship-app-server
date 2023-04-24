@@ -189,6 +189,13 @@ io.on("connection", (socket) => {
       const currentRoomID = Number(currentRoom.id);
       if (currentRoomID === Number(roomLeft)) {
         currentRoom.playersIn--;
+        for (var i = 0; i < currentRoom.playersInRoom.length; i++) {
+          if (currentRoom.playersInRoom[i] === socket.id) {
+            var arrOfPla = currentRoom.playersInRoom;
+            console.log(arrOfPla);
+            arrOfPla.splice(i, 1);
+          }
+        }
       }
     }
 
