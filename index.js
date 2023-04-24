@@ -123,8 +123,17 @@ io.on("connection", (socket) => {
     ) {
       io.to(players[socket.id].roomID).emit("theGameIsOn", true);
 
-      var playerId = Object.keys(players)[Math.round(Math.random())];
-      players[playerId].socket.emit("yourTurn", true);
+      const indexWhoIsStarting = Math.round(Math.random());
+      const whichRoomToServe = Number(players[socket.id].roomID);
+      var whichPlayerStarts = null;
+      for (var room in allRooms) {
+        const currentRoom = allRooms[room];
+        if (currentRoom.id === whichRoomToServe) {
+          whichPlayerStarts = currentRoom.playersInRoom[indexWhoIsStarting];
+          break;
+        }
+      }
+      players[whichPlayerStarts].socket.emit("yourTurn", true);
     }
   });
 
