@@ -17,11 +17,7 @@ var httpServer = http.createServer(app).listen(PORT);
 
 var io = new Server(httpServer, { cors: { origin: "*" } });
 
-const allRooms = [
-  { id: 0, playersIn: 0 },
-  { id: 1, playersIn: 0 },
-];
-const primeroRoom = "primeroRoom";
+const allRooms = [];
 const players = []; // table which stores players obj
 
 io.on("connection", (socket) => {
@@ -36,18 +32,38 @@ io.on("connection", (socket) => {
     roomID: null,
   };
 
+  if (allRooms.length === 0) {
+    generateNewRoom();
+    // console.log("generatedRoomID:", generatedRoomID);
+    // console.log("allRooms:", allRooms);
+  }
+
   for (var room in allRooms) {
-    var currentRoomID = room.id;
-    if (room.playersIn < 2) {
+    const currentRoom = allRooms[room];
+    const currentRoomID = currentRoom.id;
+    if (currentRoom.playersIn < 2) {
       if (players[socket.id].roomID == null) {
-        room.playersIn++;
+        currentRoom.playersIn++;
         players[socket.id].roomID = String(currentRoomID);
         break;
       }
     }
   }
-  // TODO decrese the amount of players in the room after disconnect
-
+  if (players[socket.id].roomID == null) {
+    generateNewRoom();
+    for (var room in allRooms) {
+      const currentRoom = allRooms[room];
+      const currentRoomID = currentRoom.id;
+      if (currentRoom.playersIn < 2) {
+        if (players[socket.id].roomID == null) {
+          currentRoom.playersIn++;
+          players[socket.id].roomID = String(currentRoomID);
+          break;
+        }
+      }
+    }
+  }
+  console.log("allRooms:", allRooms);
   socket.emit("yourID", socket.id);
 
   socket.join(players[socket.id].roomID);
@@ -156,9 +172,20 @@ io.on("connection", (socket) => {
     players[playerIndex].ships = [];
   });
 
+  // TODO delate room if it is already empty
   socket.on("disconnect", function (reason) {
+    const roomLeft = players[socket.id].roomID;
+    for (var room in allRooms) {
+      const currentRoom = allRooms[room];
+      const currentRoomID = Number(currentRoom.id);
+      if (currentRoomID === Number(roomLeft)) {
+        currentRoom.playersIn--;
+      }
+    }
+
     delete players[socket.id];
     console.log("Player ❌ disconnected", socket.id);
+    console.log("allRooms:", allRooms);
   });
 });
 
@@ -171,9 +198,12 @@ function getPlayerIndex(socket) {
 function getOpponentIndex(playerIndex) {
   var opponentIndex = null;
   for (const [index, p] of Object.entries(players)) {
-    if (playerIndex != index) opponentIndex = index;
+    if (
+      playerIndex != index &&
+      players[playerIndex].roomID === players[index].roomID
+    )
+      opponentIndex = index;
   }
-
   if (!opponentIndex) throw "Trouble getting opponent index";
 
   return opponentIndex;
@@ -236,4 +266,19 @@ function getShipsLeftOnBoard(justPlayerIndex) {
     if (!individualShip.isSunk) ++amountOfShipsLeft;
   });
   return amountOfShipsLeft;
+}
+
+function getPlayerRoom(justPlayerIndex) {
+  return players[justPlayerIndex].roomID;
+}
+
+function generateNewRoom() {
+  const generatedRoomID = Math.floor(Math.random() * 100) + 1;
+  for (var room in allRooms) {
+    const currentRoom = allRooms[room];
+    if (currentRoom.id === generatedRoomID) {
+      generateNewRoom();
+    }
+  }
+  allRooms.push({ id: generatedRoomID, playersIn: 0 });
 }
