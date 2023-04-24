@@ -30,6 +30,7 @@ io.on("connection", (socket) => {
     name: null,
     ships: [],
     roomID: null,
+    hasPickedShips: false,
   };
 
   if (allRooms.length === 0) {
@@ -45,6 +46,7 @@ io.on("connection", (socket) => {
       if (players[socket.id].roomID == null) {
         currentRoom.playersIn++;
         players[socket.id].roomID = String(currentRoomID);
+        currentRoom.playersInRoom.push(socket.id);
         break;
       }
     }
@@ -58,20 +60,16 @@ io.on("connection", (socket) => {
         if (players[socket.id].roomID == null) {
           currentRoom.playersIn++;
           players[socket.id].roomID = String(currentRoomID);
+          currentRoom.playersInRoom.push(socket.id);
           break;
         }
       }
     }
   }
-  console.log("allRooms:", allRooms);
+
   socket.emit("yourID", socket.id);
 
   socket.join(players[socket.id].roomID);
-
-  socket.on("greeting", function (data) {
-    players[socket.id].name = data.playerName;
-    console.log("Hello from " + data.playerName);
-  });
 
   socket.on("setPlayerName", function (recivedName) {
     var playerIndex = getPlayerIndex(socket);
@@ -103,14 +101,15 @@ io.on("connection", (socket) => {
     // );
     socket.emit("blockClickingOnBoard", true);
 
-    var playerIndex = getPlayerIndex(socket);
-    var opponentIndex = getOpponentIndex(playerIndex);
+    const playerIndex = getPlayerIndex(socket);
+    const opponentIndex = getOpponentIndex(playerIndex);
 
     for (const [index, p] of Object.entries(players)) {
       if (p.socket.id == socket.id) {
         p.ships = shipsPickedData;
+        p.hasPickedShips = true;
       } else {
-        p.socket.emit("opponentIsReady", {
+        players[opponentIndex].socket.emit("opponentIsReady", {
           id: socket.id,
           name: players[playerIndex].name,
         });
@@ -179,6 +178,7 @@ io.on("connection", (socket) => {
   socket.on("theGameIsOver", (data) => {
     const playerIndex = getPlayerIndex(socket);
     players[playerIndex].ships = [];
+    players[playerIndex].hasPickedShips = false;
   });
 
   // TODO delate room if it is already empty
@@ -217,8 +217,9 @@ function getOpponentIndex(playerIndex) {
     if (
       playerIndex != index &&
       players[playerIndex].roomID === players[index].roomID
-    )
+    ) {
       opponentIndex = index;
+    }
   }
   if (!opponentIndex) throw "Trouble getting opponent index";
 
@@ -296,5 +297,5 @@ function generateNewRoom() {
       generateNewRoom();
     }
   }
-  allRooms.push({ id: generatedRoomID, playersIn: 0 });
+  allRooms.push({ id: generatedRoomID, playersIn: 0, playersInRoom: [] });
 }
