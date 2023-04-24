@@ -21,7 +21,6 @@ const allRooms = [];
 const players = []; // table which stores players obj
 
 io.on("connection", (socket) => {
-  // if (Object.keys(players).length == 2) return socket.disconnect(true);
   // TODO check if there is room for player to play in
   console.log("Player ✅ connection", socket.id);
 
@@ -35,8 +34,6 @@ io.on("connection", (socket) => {
 
   if (allRooms.length === 0) {
     generateNewRoom();
-    // console.log("generatedRoomID:", generatedRoomID);
-    // console.log("allRooms:", allRooms);
   }
 
   for (var room in allRooms) {
@@ -222,7 +219,7 @@ function getOpponentIndex(playerIndex) {
     }
   }
   if (!opponentIndex) throw "Trouble getting opponent index";
-
+  // ! crush of server after PLAY btn clicked and there is no other player currently in room
   return opponentIndex;
 }
 
