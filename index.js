@@ -21,7 +21,6 @@ const allRooms = [];
 const players = []; // table which stores players obj
 
 io.on("connection", (socket) => {
-  // TODO check if there is room for player to play in
   console.log("Player ✅ connection", socket.id);
 
   players[socket.id] = {
@@ -63,6 +62,29 @@ io.on("connection", (socket) => {
       }
     }
   }
+
+  /**
+   * Prevents the user from starting the game if there is no opponent in the room to play against. Prevents the error "Trouble getting opponent index";
+   * returns false if there are less then 2 players in the room
+   * returns true if there are exactly 2 players in the room
+   */
+  socket.on("playBtnClicked", (data, callback) => {
+    // console.log(data); // "Checking for opponent in room"
+    const neededRoomID = Number(players[socket.id].roomID);
+    var isThereEnoughPlayersToStart = null;
+    for (var room in allRooms) {
+      const currentRoom = allRooms[room];
+      if (currentRoom.id === neededRoomID) {
+        if (Number(currentRoom.playersIn) === 2)
+          isThereEnoughPlayersToStart = true;
+        else isThereEnoughPlayersToStart = false;
+        break;
+      }
+    }
+    if (isThereEnoughPlayersToStart === null)
+      throw "Trouble getting quantity of players in room";
+    callback(isThereEnoughPlayersToStart);
+  });
 
   socket.emit("yourID", socket.id);
 
@@ -219,7 +241,6 @@ function getOpponentIndex(playerIndex) {
     }
   }
   if (!opponentIndex) throw "Trouble getting opponent index";
-  // ! crush of server after PLAY btn clicked and there is no other player currently in room
   return opponentIndex;
 }
 
