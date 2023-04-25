@@ -201,6 +201,7 @@ io.on("connection", (socket) => {
   });
 
   // TODO delate room if it is already empty
+  // TODO end the game if player is disconnected from the server
   socket.on("disconnect", function (reason) {
     const roomLeft = players[socket.id].roomID;
     for (var room in allRooms) {
@@ -211,7 +212,6 @@ io.on("connection", (socket) => {
         for (var i = 0; i < currentRoom.playersInRoom.length; i++) {
           if (currentRoom.playersInRoom[i] === socket.id) {
             var arrOfPla = currentRoom.playersInRoom;
-            console.log(arrOfPla);
             arrOfPla.splice(i, 1);
           }
         }
@@ -220,7 +220,7 @@ io.on("connection", (socket) => {
 
     delete players[socket.id];
     console.log("Player ❌ disconnected", socket.id);
-    console.log("allRooms:", allRooms);
+    // console.log("allRooms:", allRooms);
   });
 });
 
