@@ -200,14 +200,15 @@ io.on("connection", (socket) => {
     players[playerIndex].hasPickedShips = false;
   });
 
-  // TODO delate room if it is already empty
-  // TODO end the game if player is disconnected from the server
   socket.on("disconnect", function (reason) {
+    // console.log("⚗ Process of disconnecting ...");
     const roomLeft = players[socket.id].roomID;
     for (var room in allRooms) {
       const currentRoom = allRooms[room];
       const currentRoomID = Number(currentRoom.id);
       if (currentRoomID === Number(roomLeft)) {
+        // io.to(players[socket.id].roomID).emit("theGameIsOver", true);
+        io.to(roomLeft).emit("opponentDisconnected", true);
         currentRoom.playersIn--;
         for (var i = 0; i < currentRoom.playersInRoom.length; i++) {
           if (currentRoom.playersInRoom[i] === socket.id) {
@@ -215,12 +216,15 @@ io.on("connection", (socket) => {
             arrOfPla.splice(i, 1);
           }
         }
+        if (currentRoom.playersIn === 0) {
+          delete allRooms[room];
+        }
       }
     }
 
     delete players[socket.id];
     console.log("Player ❌ disconnected", socket.id);
-    // console.log("allRooms:", allRooms);
+    // console.log("allRooms", allRooms);
   });
 });
 
